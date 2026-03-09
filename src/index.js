@@ -221,9 +221,11 @@ app.post("/webhooks/ml", asyncHandler(async (req, res) => {
   res.status(200).json({ ok: true, eventId: event.id });
 }));
 
-app.get("/webhooks/ml/events", asyncHandler(async (req, res) => {
-  res.json({ ok: true, count: webhookEvents.length, events: webhookEvents });
-}));
+if (config.appEnv === "development") {
+  app.get("/webhooks/ml/events", asyncHandler(async (req, res) => {
+    res.json({ ok: true, count: webhookEvents.length, events: webhookEvents });
+  }));
+}
 
 app.use((error, req, res, _next) => {
   const status = Number(error.status || 500);
