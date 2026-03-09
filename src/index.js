@@ -151,14 +151,18 @@ app.get("/ml/questions/:id", asyncHandler(async (req, res) => {
 }));
 
 app.post("/ml/questions/:id/answer", asyncHandler(async (req, res) => {
-  if (!req.body?.text) {
-    return res.status(400).json({ ok: false, error: "Missing body.text" });
+  const questionId = Number(req.params.id);
+  if (!Number.isFinite(questionId)) {
+    return res.status(400).json({ ok: false, error: "Invalid question id" });
+  }
+  if (typeof req.body?.text !== "string" || req.body.text.trim() === "") {
+    return res.status(400).json({ ok: false, error: "body.text must be a non-empty string" });
   }
   const payload = await ml.requestWithRetries({
     method: "POST",
     path: "/answers",
     body: {
-      question_id: Number(req.params.id),
+      question_id: questionId,
       text: req.body.text,
     },
   });
