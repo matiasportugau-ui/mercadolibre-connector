@@ -49,7 +49,21 @@ export const createTokenStore = ({ filePath, encryptionKey, logger }) => {
     try {
       const raw = await fs.readFile(filePath, "utf8");
       const content = keyBuffer ? decrypt(raw, keyBuffer) : raw;
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+
+      if (
+        !keyBuffer &&
+        parsed &&
+        typeof parsed === "object" &&
+        parsed.encrypted === true
+      ) {
+        throw new Error(
+          "Encrypted token file detected but TOKEN_ENCRYPTION_KEY is not set. " +
+            "Set TOKEN_ENCRYPTION_KEY to the original encryption key or delete the token file to re-authenticate."
+        );
+      }
+
+      return parsed;
     } catch (error) {
       if (error.code === "ENOENT") return null;
       throw error;
