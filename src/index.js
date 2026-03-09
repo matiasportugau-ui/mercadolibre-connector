@@ -185,10 +185,19 @@ app.get("/ml/orders/:id", asyncHandler(async (req, res) => {
 
 app.post("/webhooks/ml", asyncHandler(async (req, res) => {
   if (config.webhookVerifyToken) {
+    const authHeader = req.headers.authorization;
+    let authorizationToken = authHeader;
+    if (typeof authHeader === "string") {
+      const bearerPrefix = "Bearer ";
+      if (authHeader.startsWith(bearerPrefix) || authHeader.startsWith(bearerPrefix.toLowerCase())) {
+        authorizationToken = authHeader.slice(bearerPrefix.length).trim();
+      }
+    }
+
     const received =
       req.query.verify_token ||
       req.headers["x-webhook-token"] ||
-      req.headers.authorization;
+      authorizationToken;
     if (String(received) !== String(config.webhookVerifyToken)) {
       return res.status(401).json({ ok: false, error: "Invalid webhook token" });
     }
