@@ -73,7 +73,9 @@ export const createTokenStore = ({ filePath, encryptionKey, logger }) => {
   const write = async (tokens) => {
     const content = JSON.stringify(tokens, null, 2);
     const raw = keyBuffer ? encrypt(content, keyBuffer) : content;
-    await fs.writeFile(filePath, raw, "utf8");
+    const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+    await fs.writeFile(tempPath, raw, { encoding: "utf8", mode: 0o600 });
+    await fs.rename(tempPath, filePath);
   };
 
   return { read, write };
