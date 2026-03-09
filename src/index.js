@@ -21,6 +21,20 @@ app.use(
 
 const stateTtlMs = 10 * 60 * 1000;
 const oauthStates = new Map();
+
+const pruneExpiredOauthStates = () => {
+  const now = Date.now();
+  for (const [state, createdAt] of oauthStates) {
+    if (now - createdAt > stateTtlMs) {
+      oauthStates.delete(state);
+    }
+  }
+};
+
+const oauthStatePruneInterval = setInterval(pruneExpiredOauthStates, stateTtlMs);
+if (typeof oauthStatePruneInterval.unref === "function") {
+  oauthStatePruneInterval.unref();
+}
 const webhookEvents = [];
 const maxWebhookEvents = 250;
 
