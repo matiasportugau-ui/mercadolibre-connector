@@ -1,0 +1,19 @@
+{
+  "name": "@ml-automator/automation-engine",
+  "version": "1.0.0",
+  "description": "Rule-based auto-reply engine for MercadoLibre questions",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

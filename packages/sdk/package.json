@@ -1,0 +1,15 @@
+{
+  "name": "@bmc/mercadolibre-sdk",
+  "version": "1.0.0",
+  "description": "MercadoLibre automation SDK for calculadora-bmc and LATAM integrations",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "keywords": ["mercadolibre", "automation", "latam", "ecommerce"],
+  "license": "MIT",
+  "dependencies": {
+    "@ml-automator/automation-engine": "workspace:*"
+  }
+}
