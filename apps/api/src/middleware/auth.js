@@ -9,16 +9,20 @@ export const authMiddleware = async (c, next) => {
   }
   const token = authHeader.slice(7);
 
-  // Use a per-request client with the user's token for RLS
-  const userSupabase = createClient(config.supabaseUrl, config.supabaseServiceKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
+  // Verify the token using the service-role client (auth.getUser is safe here)
+  const adminSupabase = createClient(config.supabaseUrl, config.supabaseServiceKey, {
     auth: { persistSession: false },
   });
-
-  const { data: { user }, error } = await userSupabase.auth.getUser(token);
+  const { data: { user }, error } = await adminSupabase.auth.getUser(token);
   if (error || !user) {
     return c.json({ ok: false, error: 'Invalid or expired token' }, 401);
   }
+
+  // Per-request client uses the anon key + user JWT so RLS is enforced
+  const userSupabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false },
+  });
 
   c.set('user', user);
   c.set('userSupabase', userSupabase);

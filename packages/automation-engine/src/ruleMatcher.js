@@ -12,20 +12,21 @@ export const evaluateRules = (question, rules) => {
     if (!rule.enabled) continue;
 
     const results = (rule.conditions ?? []).map((condition) => {
+      const rawValue = String(condition.value ?? '');
       switch (condition.type) {
         case 'keyword':
-          return questionText.includes(condition.value.toLowerCase());
+          return questionText.includes(rawValue.toLowerCase());
         case 'regex': {
           try {
-            return new RegExp(condition.value, 'i').test(question.text ?? '');
+            return new RegExp(rawValue, 'i').test(question.text ?? '');
           } catch {
             return false;
           }
         }
         case 'item_id':
-          return itemId === String(condition.value);
+          return itemId === rawValue;
         case 'category_id':
-          return categoryId === String(condition.value);
+          return categoryId === rawValue;
         case 'any':
           return true;
         default:

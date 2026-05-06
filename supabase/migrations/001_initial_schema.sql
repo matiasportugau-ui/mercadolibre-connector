@@ -17,11 +17,13 @@ create table if not exists profiles (
 );
 alter table profiles enable row level security;
 create policy "users can read own profile"    on profiles for select using (auth.uid() = id);
-create policy "users can update own profile"  on profiles for update using (auth.uid() = id);
+create policy "users can update own profile"  on profiles for update using (auth.uid() = id) with check (auth.uid() = id);
 
 -- auto-create profile on new user signup
 create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer
+set search_path = public, auth
+as $$
 begin
   insert into profiles (id, full_name)
   values (new.id, new.raw_user_meta_data->>'full_name');

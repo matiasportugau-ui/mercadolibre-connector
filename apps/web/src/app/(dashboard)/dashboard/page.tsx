@@ -3,16 +3,29 @@ import { MessageSquare, Zap, Store, TrendingUp } from 'lucide-react';
 
 async function getStats(userId: string) {
   const supabase = createClient();
-  const [{ count: ruleCount }, { count: accountCount }, { count: replyCount }] = await Promise.all([
+
+  // Fetch rule count and account list in parallel
+  const [{ count: ruleCount }, { count: accountCount }, { data: accounts }] = await Promise.all([
     supabase.from('automation_rules').select('*', { count: 'exact', head: true }).eq('user_id', userId),
     supabase.from('ml_accounts').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-    supabase.from('auto_reply_log')
-      .select('ml_account_id', { count: 'exact', head: true })
-      .in('ml_account_id', (await supabase.from('ml_accounts').select('id').eq('user_id', userId)).data?.map((a: any) => a.id) ?? [])
-      .eq('status', 'sent')
-      .gte('created_at', new Date(new Date().setDate(1)).toISOString()),
+    supabase.from('ml_accounts').select('id').eq('user_id', userId),
   ]);
-  return { ruleCount: ruleCount ?? 0, accountCount: accountCount ?? 0, replyCount: replyCount ?? 0 };
+
+  const accountIds = accounts?.map((a) => a.id) ?? [];
+
+  // Skip reply log query entirely when there are no accounts (empty .in() causes PostgREST errors)
+  let replyCount = 0;
+  if (accountIds.length > 0) {
+    const { count } = await supabase
+      .from('auto_reply_log')
+      .select('ml_account_id', { count: 'exact', head: true })
+      .in('ml_account_id', accountIds)
+      .eq('status', 'sent')
+      .gte('created_at', new Date(new Date().setDate(1)).toISOString());
+    replyCount = count ?? 0;
+  }
+
+  return { ruleCount: ruleCount ?? 0, accountCount: accountCount ?? 0, replyCount };
 }
 
 export default async function DashboardPage() {

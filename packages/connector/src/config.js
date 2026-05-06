@@ -12,7 +12,7 @@ export const config = {
   appEnv: process.env.APP_ENV || process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 3001),
   publicBaseUrl: process.env.PUBLIC_BASE_URL || "http://localhost:3001",
-  mlClientId: process.env.ML_CLIENT_ID || "742811153438318",
+  mlClientId: process.env.ML_CLIENT_ID || "",
   mlClientSecret: process.env.ML_CLIENT_SECRET || "",
   mlAuthBase: process.env.ML_AUTH_BASE || "https://auth.mercadolibre.com.uy",
   mlApiBase: process.env.ML_API_BASE || "https://api.mercadolibre.com",

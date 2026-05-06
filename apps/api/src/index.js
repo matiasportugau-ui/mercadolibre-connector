@@ -12,7 +12,14 @@ import { billingRouter } from './routes/billing.js';
 const app = new Hono();
 
 app.use('*', logger());
-app.use('/api/*', cors({ origin: '*', allowHeaders: ['Authorization', 'Content-Type'] }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : ['http://localhost:3000'];
+
+app.use('/api/*', cors({
+  origin: (origin) => allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+  allowHeaders: ['Authorization', 'Content-Type'],
+}));
 
 app.get('/health', (c) => c.json({ ok: true, service: 'ml-automator-api', env: config.appEnv }));
 

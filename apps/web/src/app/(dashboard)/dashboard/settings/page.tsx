@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { CopyButton } from '@/components/dashboard/CopyButton';
 
 export default async function SettingsPage() {
   const supabase = createClient();
@@ -22,7 +23,7 @@ export default async function SettingsPage() {
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-              <input type="email" value={user?.email ?? ''} disabled className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-500" />
+              <input type="email" defaultValue={user?.email ?? ''} disabled className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
@@ -36,13 +37,12 @@ export default async function SettingsPage() {
           <h2 className="font-semibold text-gray-900 mb-1">URL de Webhook</h2>
           <p className="text-xs text-gray-400 mb-4">Configura esta URL en tu aplicación de Mercado Libre para recibir notificaciones</p>
           <div className="flex gap-2">
-            <input readOnly value={webhookUrl} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600 font-mono" />
-            <button
-              onClick={() => navigator.clipboard.writeText(webhookUrl)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition"
-            >
-              Copiar
-            </button>
+            <input
+              readOnly
+              value={webhookUrl}
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600 font-mono"
+            />
+            <CopyButton text={webhookUrl} />
           </div>
         </div>
       </div>

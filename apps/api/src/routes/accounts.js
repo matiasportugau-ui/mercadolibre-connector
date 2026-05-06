@@ -4,11 +4,20 @@ import { authMiddleware, planMiddleware } from '../middleware/auth.js';
 import { getPlan, isUnlimited } from '@ml-automator/automation-engine';
 import { config } from '../config.js';
 
+// Validate encryption key once at startup — fail fast if it's present but invalid.
+let encryptionKey = null;
+if (config.tokenEncryptionKey) {
+  const keyBuf = Buffer.from(config.tokenEncryptionKey, 'hex');
+  if (keyBuf.length !== 32) {
+    throw new Error('TOKEN_ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
+  }
+  encryptionKey = keyBuf;
+}
+
 const encryptToken = (plaintext) => {
-  if (!config.tokenEncryptionKey) return plaintext;
-  const key = Buffer.from(config.tokenEncryptionKey, 'hex');
+  if (!encryptionKey) return plaintext;
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const cipher = crypto.createCipheriv('aes-256-gcm', encryptionKey, iv);
   const enc = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
   return JSON.stringify({ iv: iv.toString('hex'), tag: tag.toString('hex'), data: enc.toString('hex') });
@@ -50,7 +59,6 @@ accountsRouter.post('/connect', async (c) => {
   const profile = c.get('profile');
   const plan = getPlan(profile?.plan_id);
 
-  // Check account limit
   if (!isUnlimited(plan.maxAccounts)) {
     const { count } = await userSupabase
       .from('ml_accounts')

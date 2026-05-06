@@ -9,22 +9,26 @@ import { getPlan, isUnlimited } from './plans.js';
  */
 export const createAutomationEngine = ({ supabase }) => {
 
-  const fetchRulesForAccount = async (mlAccountId) => {
+  // Fetch rules scoped to userId: account-specific rules AND global (null) rules for that account.
+  const fetchRulesForAccount = async (mlAccountId, userId) => {
     const { data, error } = await supabase
       .from('automation_rules')
-      .select('*, reply_templates(*)')
-      .eq('ml_account_id', mlAccountId)
+      .select('*')
+      .eq('user_id', userId)
       .eq('enabled', true)
+      .or(`ml_account_id.eq.${mlAccountId},ml_account_id.is.null`)
       .order('priority', { ascending: true });
     if (error) throw error;
     return data ?? [];
   };
 
-  const fetchTemplate = async (templateId) => {
+  // Scope template fetch to userId to prevent cross-tenant reads.
+  const fetchTemplate = async (templateId, userId) => {
     const { data, error } = await supabase
       .from('reply_templates')
       .select('content')
       .eq('id', templateId)
+      .eq('user_id', userId)
       .single();
     if (error) throw error;
     return data;
@@ -52,12 +56,17 @@ export const createAutomationEngine = ({ supabase }) => {
     const plan = getPlan(profile.plan_id);
     if (isUnlimited(plan.questionsPerMonth)) return { allowed: true };
 
-    // reset counter if it's a new month
-    const today = new Date().toISOString().slice(0, 10);
-    if (profile.reply_count_reset !== today && new Date(profile.reply_count_reset).getMonth() !== new Date().getMonth()) {
+    // Reset counter on new calendar month (compare year + month to handle year rollover).
+    const now = new Date();
+    const resetDate = new Date(profile.reply_count_reset);
+    const isNewMonth =
+      now.getFullYear() !== resetDate.getFullYear() ||
+      now.getMonth() !== resetDate.getMonth();
+
+    if (isNewMonth) {
       await supabase
         .from('profiles')
-        .update({ reply_count_month: 0, reply_count_reset: today })
+        .update({ reply_count_month: 0, reply_count_reset: now.toISOString().slice(0, 10) })
         .eq('id', userId);
       return { allowed: true };
     }
@@ -65,8 +74,9 @@ export const createAutomationEngine = ({ supabase }) => {
     return { allowed: profile.reply_count_month < plan.questionsPerMonth };
   };
 
-  const incrementReplyCount = async (userId) => {
-    await supabase.rpc('increment_reply_count', { user_id_arg: userId });
+  const incrementReplyCount = async () => {
+    // RPC uses auth.uid() server-side; service role impersonation is not needed.
+    await supabase.rpc('increment_reply_count');
   };
 
   /**
@@ -80,14 +90,14 @@ export const createAutomationEngine = ({ supabase }) => {
       return { status: 'skipped', reason: 'monthly_limit_reached' };
     }
 
-    const rules = await fetchRulesForAccount(mlAccountId);
+    const rules = await fetchRulesForAccount(mlAccountId, userId);
     const matchedRule = evaluateRules(question, rules);
 
     if (!matchedRule) {
       return { status: 'no_match' };
     }
 
-    const template = await fetchTemplate(matchedRule.action.templateId);
+    const template = await fetchTemplate(matchedRule.action.templateId, userId);
 
     const variables = {
       buyer_name: question.from?.nickname ?? '',
@@ -105,9 +115,8 @@ export const createAutomationEngine = ({ supabase }) => {
       if (!res.ok) throw new Error(`ML API error ${res.status}`);
 
       await logReply({ ruleId: matchedRule.id, mlAccountId, questionId: question.id, answerText, status: 'sent' });
-      await incrementReplyCount(userId);
+      await incrementReplyCount();
 
-      // update rule stats
       await supabase
         .from('automation_rules')
         .update({ total_matched: (matchedRule.total_matched ?? 0) + 1, last_matched_at: new Date().toISOString() })
@@ -122,38 +131,41 @@ export const createAutomationEngine = ({ supabase }) => {
 
   /**
    * Entry point called by the API webhook handler.
-   * Persists the event then triggers processQuestion if topic is "questions".
+   * Always marks the event processed (via try/finally) even if processing throws.
    */
   const processWebhookEvent = async ({ eventId, topic, resource, mlAccountId, userId, mlApiFetch }) => {
-    // mark as processed
-    const updateProcessed = () =>
+    const updateProcessed = (errorMsg) =>
       supabase
         .from('webhook_events')
-        .update({ processed: true, processed_at: new Date().toISOString() })
+        .update({
+          processed: true,
+          processed_at: new Date().toISOString(),
+          ...(errorMsg ? { raw_body: supabase.raw(`raw_body || '{"_error":"${errorMsg}"}'::jsonb`) } : {}),
+        })
         .eq('id', eventId);
 
-    if (topic !== 'questions') {
-      await updateProcessed();
-      return { status: 'ignored', topic };
-    }
+    try {
+      if (topic !== 'questions') {
+        return { status: 'ignored', topic };
+      }
 
-    // resource is like "/questions/12345"
-    const questionId = resource?.split('/').pop();
-    if (!questionId) {
-      await updateProcessed();
-      return { status: 'ignored', reason: 'no_question_id' };
-    }
+      const questionId = resource?.split('/').pop();
+      if (!questionId) {
+        return { status: 'ignored', reason: 'no_question_id' };
+      }
 
-    const questionRes = await mlApiFetch(`/questions/${questionId}`);
-    if (!questionRes.ok) {
-      await updateProcessed();
-      return { status: 'failed', reason: 'question_fetch_error' };
-    }
-    const question = await questionRes.json();
+      const questionRes = await mlApiFetch(`/questions/${questionId}`);
+      if (!questionRes.ok) {
+        return { status: 'failed', reason: 'question_fetch_error' };
+      }
+      const question = await questionRes.json();
 
-    const result = await processQuestion({ question, mlAccountId, userId, mlApiFetch });
-    await updateProcessed();
-    return result;
+      return await processQuestion({ question, mlAccountId, userId, mlApiFetch });
+    } catch (err) {
+      return { status: 'failed', error: err.message };
+    } finally {
+      await updateProcessed().catch(() => {});
+    }
   };
 
   return { processWebhookEvent, processQuestion, evaluateRules, renderTemplate };

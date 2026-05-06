@@ -6,6 +6,7 @@ export const config = {
 
   supabaseUrl: process.env.SUPABASE_URL ?? '',
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY ?? '',
+  supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? '',
 
   connectorUrl: process.env.CONNECTOR_URL ?? 'http://localhost:3001',
 

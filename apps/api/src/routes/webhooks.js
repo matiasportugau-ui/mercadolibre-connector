@@ -19,7 +19,6 @@ const decryptToken = (encryptedJson) => {
   }
 };
 
-/** Build an authed ML API fetch for a given account */
 const buildMlApiFetch = (accessToken) => (path, options = {}) =>
   fetch(`https://api.mercadolibre.com${path}`, {
     ...options,
@@ -37,7 +36,6 @@ webhooksRouter.post('/ml', async (c) => {
   const topic = c.req.header('x-topic') ?? body.topic ?? '';
   const resource = body.resource ?? '';
 
-  // Find the ML account this webhook belongs to
   const mlUserId = String(body.user_id ?? '');
   const { data: account } = await supabase
     .from('ml_accounts')
@@ -46,22 +44,29 @@ webhooksRouter.post('/ml', async (c) => {
     .eq('is_active', true)
     .single();
 
-  // Persist event
-  const { data: event } = await supabase
+  // Persist event; continue even if persistence fails (return a generated fallback ID)
+  const { data: event, error: insertError } = await supabase
     .from('webhook_events')
     .insert({ ml_account_id: account?.id ?? null, topic, resource, raw_body: body })
     .select('id')
     .single();
 
-  if (!account) return c.json({ ok: true, eventId: event?.id, note: 'account_not_found' });
+  if (insertError) {
+    console.error('webhook_events insert failed:', insertError.message);
+  }
 
-  // Fire-and-forget automation processing
+  const eventId = event?.id ?? crypto.randomUUID();
+
+  if (!account) {
+    return c.json({ ok: true, eventId, note: 'account_not_found' });
+  }
+
   const accessToken = decryptToken(account.access_token_enc);
   const engine = createAutomationEngine({ supabase });
 
   engine
     .processWebhookEvent({
-      eventId: event.id,
+      eventId,
       topic,
       resource,
       mlAccountId: account.id,
@@ -70,7 +75,7 @@ webhooksRouter.post('/ml', async (c) => {
     })
     .catch((err) => console.error('Automation engine error:', err));
 
-  return c.json({ ok: true, eventId: event?.id });
+  return c.json({ ok: true, eventId });
 });
 
 // MercadoPago billing webhooks
@@ -79,7 +84,6 @@ webhooksRouter.post('/mercadopago', async (c) => {
   const { type, data } = body;
 
   if (type === 'payment') {
-    // Payment confirmed — look up subscription and activate plan
     const paymentId = data?.id;
     if (paymentId && config.mpAccessToken) {
       const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
@@ -108,7 +112,6 @@ webhooksRouter.post('/stripe', async (c) => {
   const rawBody = await c.req.text();
   const sig = c.req.header('stripe-signature');
 
-  // Stripe signature verification happens in the main app before this route
   let event;
   try {
     const { default: Stripe } = await import('stripe');

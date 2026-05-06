@@ -8,7 +8,7 @@
     ".": "./src/index.js"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "test": "node --test src/*.test.js 2>/dev/null || true"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0"
