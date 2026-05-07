@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm turbo run build --filter=@ml-automator/web",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "pnpm install",
+  "framework": "nextjs"
+}
