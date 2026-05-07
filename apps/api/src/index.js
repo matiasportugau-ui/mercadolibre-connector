@@ -11,6 +11,7 @@ import { billingRouter } from './routes/billing.js';
 import { analyticsRouter } from './routes/analytics.js';
 import { messagesRouter } from './routes/messages.js';
 import { itemsRouter } from './routes/items.js';
+import { questionsRouter } from './routes/questions.js';
 import { runReputationSnapshot } from './jobs/snapshotReputation.js';
 import { runItemsSnapshot } from './jobs/snapshotItems.js';
 
@@ -32,6 +33,7 @@ app.route('/api/accounts', accountsRouter);
 app.route('/api/rules', rulesRouter);
 app.route('/api/templates', templatesRouter);
 app.route('/api/billing', billingRouter);
+app.route('/api/questions', questionsRouter);
 app.route('/api/analytics', analyticsRouter);
 app.route('/api/messages', messagesRouter);
 app.route('/api/items', itemsRouter);
