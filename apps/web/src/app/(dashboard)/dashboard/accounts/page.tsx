@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
-import { Store, Plus, Unlink } from 'lucide-react';
+import { Store, Plus } from 'lucide-react';
+import { DisconnectButton } from '@/components/dashboard/DisconnectButton';
 
 export default async function AccountsPage() {
   const supabase = createClient();
@@ -51,12 +52,7 @@ export default async function AccountsPage() {
                   {account.is_active ? 'Activa' : 'Inactiva'}
                 </span>
               </div>
-              <button
-                title="Desconectar"
-                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-              >
-                <Unlink className="w-4 h-4" />
-              </button>
+              <DisconnectButton accountId={account.id} />
             </div>
           ))}
         </div>

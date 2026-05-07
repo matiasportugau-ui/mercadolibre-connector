@@ -7,8 +7,22 @@
   "exports": {
     ".": "./src/index.js"
   },
-  "keywords": ["mercadolibre", "automation", "latam", "ecommerce"],
+  "files": [
+    "src"
+  ],
+  "keywords": ["mercadolibre", "automation", "latam", "ecommerce", "auto-reply"],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matiasportugau-ui/mercadolibre-connector"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": ">=2"
+  },
   "dependencies": {
     "@ml-automator/automation-engine": "workspace:*"
   }

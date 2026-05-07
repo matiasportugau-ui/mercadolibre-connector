@@ -13,7 +13,9 @@ export const authMiddleware = async (c, next) => {
   const adminSupabase = createClient(config.supabaseUrl, config.supabaseServiceKey, {
     auth: { persistSession: false },
   });
-  const { data: { user }, error } = await adminSupabase.auth.getUser(token);
+  const [{ data: { user }, error }, ] = await Promise.all([
+    adminSupabase.auth.getUser(token),
+  ]);
   if (error || !user) {
     return c.json({ ok: false, error: 'Invalid or expired token' }, 401);
   }
@@ -24,20 +26,21 @@ export const authMiddleware = async (c, next) => {
     auth: { persistSession: false },
   });
 
-  // Fetch plan_id so feature gates work without a second round-trip
-  const adminSb = createClient(config.supabaseUrl, config.supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-  const { data: profile } = await adminSb.from('profiles').select('plan_id').eq('id', user.id).single();
+  // Reuse the same admin client to fetch plan_id (no extra client instantiation)
+  const { data: profileRow } = await adminSupabase
+    .from('profiles')
+    .select('plan_id')
+    .eq('id', user.id)
+    .single();
 
   c.set('user', user);
   c.set('userId', user.id);
-  c.set('planId', profile?.plan_id ?? 'free');
+  c.set('planId', profileRow?.plan_id ?? 'free');
   c.set('userSupabase', userSupabase);
   await next();
 };
 
-/** Checks plan limits for rules/accounts. Attaches profile to context. */
+/** Fetches full profile for plan-limit checks. Sets 'profile' and syncs 'planId'. */
 export const planMiddleware = async (c, next) => {
   const user = c.get('user');
   const userSupabase = c.get('userSupabase');
@@ -49,5 +52,7 @@ export const planMiddleware = async (c, next) => {
     .single();
 
   c.set('profile', profile);
+  // Keep planId in sync in case authMiddleware fetched a stale value
+  if (profile?.plan_id) c.set('planId', profile.plan_id);
   await next();
 };
