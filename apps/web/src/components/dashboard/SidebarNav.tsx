@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Zap, FileText, BarChart2, CreditCard, Settings, Store, LogOut } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Zap, FileText, BarChart2, CreditCard, Settings, Store, LogOut, ShoppingBag, MessageCircle, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -9,6 +9,9 @@ import { useRouter } from 'next/navigation';
 const NAV = [
   { href: '/dashboard', label: 'Resumen', icon: LayoutDashboard },
   { href: '/dashboard/questions', label: 'Preguntas', icon: MessageSquare },
+  { href: '/dashboard/messages', label: 'Mensajes', icon: MessageCircle },
+  { href: '/dashboard/orders', label: 'Órdenes', icon: ShoppingBag },
+  { href: '/dashboard/items', label: 'Publicaciones', icon: Package },
   { href: '/dashboard/rules', label: 'Automatizaciones', icon: Zap },
   { href: '/dashboard/templates', label: 'Plantillas', icon: FileText },
   { href: '/dashboard/analytics', label: 'Analíticas', icon: BarChart2 },

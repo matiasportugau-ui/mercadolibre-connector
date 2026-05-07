@@ -8,6 +8,11 @@ import { rulesRouter } from './routes/rules.js';
 import { templatesRouter } from './routes/templates.js';
 import { webhooksRouter } from './routes/webhooks.js';
 import { billingRouter } from './routes/billing.js';
+import { analyticsRouter } from './routes/analytics.js';
+import { messagesRouter } from './routes/messages.js';
+import { itemsRouter } from './routes/items.js';
+import { runReputationSnapshot } from './jobs/snapshotReputation.js';
+import { runItemsSnapshot } from './jobs/snapshotItems.js';
 
 const app = new Hono();
 
@@ -27,7 +32,33 @@ app.route('/api/accounts', accountsRouter);
 app.route('/api/rules', rulesRouter);
 app.route('/api/templates', templatesRouter);
 app.route('/api/billing', billingRouter);
+app.route('/api/analytics', analyticsRouter);
+app.route('/api/messages', messagesRouter);
+app.route('/api/items', itemsRouter);
 app.route('/webhooks', webhooksRouter);
+
+// Cron job endpoints — protected by CRON_SECRET
+const verifyCron = (c) => {
+  const auth = c.req.header('Authorization') ?? '';
+  if (!config.cronSecret || auth !== `Bearer ${config.cronSecret}`) {
+    return c.json({ error: 'unauthorized' }, 401);
+  }
+  return null;
+};
+
+app.get('/api/jobs/snapshot-reputation', async (c) => {
+  const denied = verifyCron(c);
+  if (denied) return denied;
+  const results = await runReputationSnapshot();
+  return c.json({ ok: true, results });
+});
+
+app.get('/api/jobs/snapshot-items', async (c) => {
+  const denied = verifyCron(c);
+  if (denied) return denied;
+  const results = await runItemsSnapshot();
+  return c.json({ ok: true, results });
+});
 
 app.onError((err, c) => {
   console.error(err);

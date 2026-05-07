@@ -145,22 +145,75 @@ export const createAutomationEngine = ({ supabase }) => {
         .eq('id', eventId);
 
     try {
-      if (topic !== 'questions') {
-        return { status: 'ignored', topic };
+      if (topic === 'questions') {
+        const questionId = resource?.split('/').pop();
+        if (!questionId) return { status: 'ignored', reason: 'no_question_id' };
+        const questionRes = await mlApiFetch(`/questions/${questionId}`);
+        if (!questionRes.ok) return { status: 'failed', reason: 'question_fetch_error' };
+        const question = await questionRes.json();
+        return await processQuestion({ question, mlAccountId, userId, mlApiFetch });
       }
 
-      const questionId = resource?.split('/').pop();
-      if (!questionId) {
-        return { status: 'ignored', reason: 'no_question_id' };
+      if (topic === 'orders_v2') {
+        const orderId = resource?.split('/').pop();
+        if (!orderId) return { status: 'ignored', reason: 'no_order_id' };
+        const orderRes = await mlApiFetch(`/orders/${orderId}`);
+        if (orderRes.ok) {
+          const order = await orderRes.json();
+          await supabase.from('ml_orders').upsert({
+            ml_account_id: mlAccountId,
+            ml_order_id: order.id,
+            ml_buyer_id: order.buyer?.id ?? null,
+            buyer_nickname: order.buyer?.nickname ?? null,
+            status: order.status,
+            total_amount: order.total_amount ?? null,
+            currency_id: order.currency_id ?? null,
+            date_created: order.date_created ?? null,
+            date_closed: order.date_closed ?? null,
+            items: order.order_items?.map((i) => ({
+              id: i.item?.id,
+              title: i.item?.title,
+              quantity: i.quantity,
+              unit_price: i.unit_price,
+            })) ?? [],
+            raw: order,
+          }, { onConflict: 'ml_account_id,ml_order_id' });
+        }
+        return { status: 'processed', topic };
       }
 
-      const questionRes = await mlApiFetch(`/questions/${questionId}`);
-      if (!questionRes.ok) {
-        return { status: 'failed', reason: 'question_fetch_error' };
-      }
-      const question = await questionRes.json();
+      if (topic === 'messages') {
+        // resource format: /packs/:pack_id/sellers/:seller_id/messages
+        const parts = resource?.split('/') ?? [];
+        const packIdx = parts.indexOf('packs');
+        const sellerIdx = parts.indexOf('sellers');
+        const packId = packIdx !== -1 ? parts[packIdx + 1] : null;
+        const sellerId = sellerIdx !== -1 ? parts[sellerIdx + 1] : null;
+        if (!packId || !sellerId) return { status: 'ignored', reason: 'no_pack_or_seller_id' };
 
-      return await processQuestion({ question, mlAccountId, userId, mlApiFetch });
+        const msgRes = await mlApiFetch(
+          `/messages/packs/${packId}/sellers/${sellerId}?limit=1&sort_by=date_created&sort_order=desc`
+        );
+        if (msgRes.ok) {
+          const body = await msgRes.json();
+          const msg = body.messages?.[0];
+          if (msg && String(msg.from?.user_id) !== String(sellerId)) {
+            await supabase.from('ml_messages').upsert({
+              ml_account_id: mlAccountId,
+              pack_id: Number(packId),
+              message_id: msg.id,
+              from_user_id: msg.from?.user_id ?? null,
+              from_role: 'buyer',
+              text: msg.text ?? null,
+              status: msg.status ?? null,
+              created_at: msg.date_created ?? null,
+            }, { onConflict: 'ml_account_id,message_id' });
+          }
+        }
+        return { status: 'processed', topic };
+      }
+
+      return { status: 'ignored', topic };
     } catch (err) {
       return { status: 'failed', error: err.message };
     } finally {

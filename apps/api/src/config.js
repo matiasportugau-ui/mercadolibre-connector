@@ -17,4 +17,7 @@ export const config = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
 
   tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY ?? '',
+
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
+  cronSecret: process.env.CRON_SECRET ?? '',
 };

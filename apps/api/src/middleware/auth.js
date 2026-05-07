@@ -24,7 +24,15 @@ export const authMiddleware = async (c, next) => {
     auth: { persistSession: false },
   });
 
+  // Fetch plan_id so feature gates work without a second round-trip
+  const adminSb = createClient(config.supabaseUrl, config.supabaseServiceKey, {
+    auth: { persistSession: false },
+  });
+  const { data: profile } = await adminSb.from('profiles').select('plan_id').eq('id', user.id).single();
+
   c.set('user', user);
+  c.set('userId', user.id);
+  c.set('planId', profile?.plan_id ?? 'free');
   c.set('userSupabase', userSupabase);
   await next();
 };

@@ -5,6 +5,8 @@ export const PLANS = {
     questionsPerMonth: 50,
     maxRules: 3,
     maxAccounts: 1,
+    reputationDays: 7,
+    orderDays: 0,
     features: ['basic_autoreply', 'templates'],
   },
   starter: {
@@ -13,7 +15,9 @@ export const PLANS = {
     questionsPerMonth: 500,
     maxRules: 10,
     maxAccounts: 1,
-    features: ['basic_autoreply', 'templates', 'analytics'],
+    reputationDays: 30,
+    orderDays: 30,
+    features: ['basic_autoreply', 'templates', 'analytics', 'post_sale_messages', 'order_intel', 'reputation_tracker', 'listing_health'],
   },
   pro: {
     label: 'Pro',
@@ -21,7 +25,9 @@ export const PLANS = {
     questionsPerMonth: 5000,
     maxRules: 50,
     maxAccounts: 3,
-    features: ['basic_autoreply', 'templates', 'analytics', 'ai_suggestions', 'priority_support'],
+    reputationDays: 365,
+    orderDays: 90,
+    features: ['basic_autoreply', 'templates', 'analytics', 'post_sale_messages', 'order_intel', 'reputation_tracker', 'listing_health', 'ai_suggestions', 'priority_support'],
   },
   enterprise: {
     label: 'Enterprise',
@@ -29,7 +35,9 @@ export const PLANS = {
     questionsPerMonth: -1,
     maxRules: -1,
     maxAccounts: 10,
-    features: ['basic_autoreply', 'templates', 'analytics', 'ai_suggestions', 'priority_support', 'white_label', 'custom_webhooks'],
+    reputationDays: -1,
+    orderDays: -1,
+    features: ['basic_autoreply', 'templates', 'analytics', 'post_sale_messages', 'order_intel', 'reputation_tracker', 'listing_health', 'ai_suggestions', 'priority_support', 'white_label', 'custom_webhooks'],
   },
 };
 
