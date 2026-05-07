@@ -10,6 +10,8 @@ export const config = {
 
   connectorUrl: process.env.CONNECTOR_URL ?? 'http://localhost:3001',
 
+  mlWebhookSecret: process.env.ML_WEBHOOK_SECRET ?? '',
+
   mpAccessToken: process.env.MP_ACCESS_TOKEN ?? '',
   mpWebhookSecret: process.env.MP_WEBHOOK_SECRET ?? '',
 

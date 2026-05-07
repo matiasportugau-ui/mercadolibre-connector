@@ -62,11 +62,11 @@ const asyncHandler =
     Promise.resolve(fn(req, res, next)).catch(next);
 
 const ensureValidState = (state) => {
-  const createdAt = oauthStates.get(state);
-  if (!createdAt) return false;
-  const expired = Date.now() - createdAt > stateTtlMs;
+  const entry = oauthStates.get(state);
+  if (!entry) return null;
+  const expired = Date.now() - entry.createdAt > stateTtlMs;
   oauthStates.delete(state);
-  return !expired;
+  return expired ? null : entry;
 };
 
 app.get("/health", asyncHandler(async (req, res) => {
@@ -82,7 +82,8 @@ app.get("/health", asyncHandler(async (req, res) => {
 
 app.get("/auth/ml/start", asyncHandler(async (req, res) => {
   const state = crypto.randomBytes(16).toString("hex");
-  oauthStates.set(state, Date.now());
+  const userToken = req.query.user_token ? String(req.query.user_token) : null;
+  oauthStates.set(state, { createdAt: Date.now(), userToken });
   const authUrl = ml.buildAuthUrl(state);
 
   if (req.query.mode === "json") {
@@ -103,11 +104,44 @@ app.get("/auth/ml/callback", asyncHandler(async (req, res) => {
   if (!code) {
     return res.status(400).json({ ok: false, error: "Missing code in callback querystring" });
   }
-  if (!state || !ensureValidState(String(state))) {
+  const stateEntry = state ? ensureValidState(String(state)) : null;
+  if (!stateEntry) {
     return res.status(400).json({ ok: false, error: "Invalid or expired OAuth state" });
   }
 
   const tokens = await ml.exchangeCodeForTokens(String(code));
+
+  // Persist to SaaS API when a user JWT was passed through the OAuth flow.
+  if (stateEntry.userToken && config.apiUrl) {
+    try {
+      const nickRes = await fetch(`${config.mlApiBase}/users/me`, {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+        signal: AbortSignal.timeout(8000),
+      });
+      const nickData = nickRes.ok ? await nickRes.json() : {};
+
+      await fetch(`${config.apiUrl}/api/accounts/connect`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${stateEntry.userToken}`,
+        },
+        body: JSON.stringify({
+          ml_user_id: String(tokens.user_id),
+          ml_nickname: nickData.nickname ?? null,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          expires_at: tokens.expires_at,
+          country_site: req.query.country_site ?? "MLA",
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch (err) {
+      logger.error({ err }, "Failed to persist ML account to SaaS API");
+    }
+    return res.redirect(`${config.dashboardUrl}/dashboard/accounts?connected=1`);
+  }
+
   return res.json({
     ok: true,
     userId: tokens.user_id,

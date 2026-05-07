@@ -74,9 +74,8 @@ export const createAutomationEngine = ({ supabase }) => {
     return { allowed: profile.reply_count_month < plan.questionsPerMonth };
   };
 
-  const incrementReplyCount = async () => {
-    // RPC uses auth.uid() server-side; service role impersonation is not needed.
-    await supabase.rpc('increment_reply_count');
+  const incrementReplyCount = async (userId) => {
+    await supabase.rpc('increment_reply_count', { target_user_id: userId });
   };
 
   /**
@@ -115,7 +114,7 @@ export const createAutomationEngine = ({ supabase }) => {
       if (!res.ok) throw new Error(`ML API error ${res.status}`);
 
       await logReply({ ruleId: matchedRule.id, mlAccountId, questionId: question.id, answerText, status: 'sent' });
-      await incrementReplyCount();
+      await incrementReplyCount(userId);
 
       await supabase
         .from('automation_rules')

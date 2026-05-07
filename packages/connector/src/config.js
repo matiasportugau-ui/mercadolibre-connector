@@ -23,6 +23,8 @@ export const config = {
   tokenFile: process.env.ML_TOKEN_FILE || path.resolve(".ml-tokens.enc"),
   tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY || "",
   webhookVerifyToken: process.env.WEBHOOK_VERIFY_TOKEN || "",
+  apiUrl: process.env.API_URL || "http://localhost:4000",
+  dashboardUrl: process.env.DASHBOARD_URL || "http://localhost:3000",
   maxRetries: Number(process.env.ML_HTTP_MAX_RETRIES || 3),
   requestTimeoutMs: Number(process.env.ML_HTTP_TIMEOUT_MS || 15000),
 };

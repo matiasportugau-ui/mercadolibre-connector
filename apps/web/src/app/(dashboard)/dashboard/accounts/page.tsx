@@ -12,8 +12,6 @@ export default async function AccountsPage() {
     .eq('user_id', user!.id)
     .order('created_at', { ascending: true });
 
-  const connectorUrl = process.env.NEXT_PUBLIC_CONNECTOR_URL ?? 'http://localhost:3001';
-
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -22,7 +20,7 @@ export default async function AccountsPage() {
           <p className="text-gray-500 text-sm mt-1">Vincula tus cuentas para automatizar respuestas</p>
         </div>
         <a
-          href={`${connectorUrl}/auth/ml/start`}
+          href="/api/connect-ml"
           className="flex items-center gap-2 bg-ml-yellow hover:bg-yellow-400 text-gray-900 font-bold text-sm px-4 py-2 rounded-lg transition"
         >
           <Plus className="w-4 h-4" /> Conectar cuenta
@@ -34,7 +32,7 @@ export default async function AccountsPage() {
           <Store className="w-16 h-16 mx-auto mb-4 opacity-20" />
           <p className="font-semibold text-gray-600 mb-1">Ninguna cuenta conectada</p>
           <p className="text-sm mb-6">Conecta tu cuenta de Mercado Libre para comenzar</p>
-          <a href={`${connectorUrl}/auth/ml/start`} className="inline-block bg-ml-yellow text-gray-900 font-bold text-sm px-6 py-2.5 rounded-lg hover:bg-yellow-400 transition">
+          <a href="/api/connect-ml" className="inline-block bg-ml-yellow text-gray-900 font-bold text-sm px-6 py-2.5 rounded-lg hover:bg-yellow-400 transition">
             Conectar ahora
           </a>
         </div>

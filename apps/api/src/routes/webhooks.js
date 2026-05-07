@@ -30,9 +30,33 @@ const buildMlApiFetch = (accessToken) => (path, options = {}) =>
     signal: AbortSignal.timeout(15000),
   });
 
+const verifyMlSignature = (body, headers, secret) => {
+  if (!secret) return true;
+  const sig = headers['x-signature'];
+  const requestId = headers['x-request-id'] ?? '';
+  if (!sig) return false;
+  const tsMatch = sig.match(/ts=([^,]+)/);
+  const v1Match = sig.match(/v1=([^,]+)/);
+  if (!tsMatch || !v1Match) return false;
+  const ts = tsMatch[1];
+  const v1 = v1Match[1];
+  const manifest = `id:${String(body.id ?? '')};request-id:${requestId};ts:${ts}`;
+  const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(v1, 'hex'));
+  } catch {
+    return false;
+  }
+};
+
 // MercadoLibre webhooks
 webhooksRouter.post('/ml', async (c) => {
   const body = await c.req.json();
+
+  if (!verifyMlSignature(body, c.req.header(), config.mlWebhookSecret)) {
+    return c.json({ ok: false, error: 'invalid_signature' }, 401);
+  }
+
   const topic = c.req.header('x-topic') ?? body.topic ?? '';
   const resource = body.resource ?? '';
 
