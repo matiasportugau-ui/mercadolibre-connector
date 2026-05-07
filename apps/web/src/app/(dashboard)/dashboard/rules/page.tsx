@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Zap, Plus, Trash2, Power } from 'lucide-react';
+import { Zap, Plus, Trash2, Power, Pencil } from 'lucide-react';
+import Link from 'next/link';
 import { API_URL } from '@/lib/utils';
 
 type Rule = {
@@ -107,7 +108,7 @@ export default function RulesPage() {
                 <p>{rule.total_matched} coincidencias</p>
                 {rule.last_matched_at && <p>{new Date(rule.last_matched_at).toLocaleDateString('es-AR')}</p>}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => toggleRule(rule.id, !rule.enabled)}
                   className={`p-1.5 rounded-lg transition ${rule.enabled ? 'bg-green-100 text-green-600 hover:bg-red-50 hover:text-red-500' : 'bg-gray-100 text-gray-400 hover:bg-green-50 hover:text-green-600'}`}
@@ -115,6 +116,13 @@ export default function RulesPage() {
                 >
                   <Power className="w-4 h-4" />
                 </button>
+                <Link
+                  href={`/dashboard/rules/${rule.id}`}
+                  className="p-1.5 rounded-lg text-gray-400 hover:bg-ml-blue/10 hover:text-ml-blue transition"
+                  title="Editar"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Link>
                 <button
                   onClick={() => deleteRule(rule.id)}
                   className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition"

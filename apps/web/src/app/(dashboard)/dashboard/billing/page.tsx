@@ -5,10 +5,14 @@ import { Check, Zap } from 'lucide-react';
 import { cn, API_URL } from '@/lib/utils';
 
 const PLANS = [
-  { id: 'free', label: 'Free', price: '$0', period: '/mes', questions: '50 preguntas', rules: '3 reglas', accounts: '1 cuenta', features: ['Respuestas automáticas', 'Plantillas de texto'] },
-  { id: 'starter', label: 'Starter', price: '$9.99', period: '/mes', questions: '500 preguntas', rules: '10 reglas', accounts: '1 cuenta', features: ['Todo del Free', 'Analíticas básicas'], popular: false },
-  { id: 'pro', label: 'Pro', price: '$29.99', period: '/mes', questions: '5,000 preguntas', rules: '50 reglas', accounts: '3 cuentas', features: ['Todo del Starter', 'Sugerencias con IA', 'Soporte prioritario'], popular: true },
-  { id: 'enterprise', label: 'Enterprise', price: '$99.99', period: '/mes', questions: 'Ilimitadas', rules: 'Ilimitadas', accounts: '10 cuentas', features: ['Todo del Pro', 'White-label', 'Webhooks personalizados'] },
+  { id: 'free', label: 'Free', price: '$0', period: '/mes', questions: '50 preguntas', rules: '3 reglas', accounts: '1 cuenta',
+    features: ['Respuestas automáticas', 'Plantillas dinámicas'] },
+  { id: 'starter', label: 'Starter', price: '$9.99', period: '/mes', questions: '500 preguntas', rules: '10 reglas', accounts: '1 cuenta',
+    features: ['Todo del Free', 'Mensajes post-venta', 'Órdenes 30 días', 'Reputación 30 días', 'Salud de publicaciones'], popular: false },
+  { id: 'pro', label: 'Pro', price: '$29.99', period: '/mes', questions: '5,000 preguntas', rules: '50 reglas', accounts: '3 cuentas',
+    features: ['Todo del Starter', 'Órdenes 90 días', 'Reputación 1 año', 'Sugerencias con IA', 'Soporte prioritario'], popular: true },
+  { id: 'enterprise', label: 'Enterprise', price: '$99.99', period: '/mes', questions: 'Ilimitadas', rules: 'Ilimitadas', accounts: '10 cuentas',
+    features: ['Todo del Pro', 'Datos ilimitados', 'White-label', 'Webhooks personalizados'] },
 ];
 
 export default function BillingPage() {

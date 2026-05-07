@@ -1,20 +1,38 @@
 import Link from 'next/link';
-import { Check, Zap, MessageSquare, BarChart2, Store, Shield } from 'lucide-react';
+import { Check, Zap, MessageSquare, BarChart2, Store, Shield, ShoppingBag, MessageCircle, TrendingUp, Sparkles } from 'lucide-react';
 
 const PLANS = [
-  { id: 'free', label: 'Free', price: '$0', period: '/mes', questions: '50', rules: '3', accounts: '1', cta: 'Empezar gratis', href: '/login', highlight: false },
-  { id: 'starter', label: 'Starter', price: '$9.99', period: '/mes', questions: '500', rules: '10', accounts: '1', cta: 'Comenzar', href: '/login?plan=starter', highlight: false },
-  { id: 'pro', label: 'Pro', price: '$29.99', period: '/mes', questions: '5,000', rules: '50', accounts: '3', cta: 'Elegir Pro', href: '/login?plan=pro', highlight: true },
-  { id: 'enterprise', label: 'Enterprise', price: '$99.99', period: '/mes', questions: 'Ilimitadas', rules: 'Ilimitadas', accounts: '10', cta: 'Contactar', href: 'mailto:hola@mlautomator.com', highlight: false },
+  {
+    id: 'free', label: 'Free', price: '$0', period: '/mes', questions: '50', rules: '3', accounts: '1',
+    extras: [], cta: 'Empezar gratis', href: '/login', highlight: false,
+  },
+  {
+    id: 'starter', label: 'Starter', price: '$9.99', period: '/mes', questions: '500', rules: '10', accounts: '1',
+    extras: ['Mensajes post-venta', 'Órdenes (30 días)', 'Reputación (30 días)', 'Salud de publicaciones'],
+    cta: 'Comenzar', href: '/login?plan=starter', highlight: false,
+  },
+  {
+    id: 'pro', label: 'Pro', price: '$29.99', period: '/mes', questions: '5,000', rules: '50', accounts: '3',
+    extras: ['Todo Starter', 'Historial 90 días', 'Reputación 1 año', 'Sugerencias con IA'],
+    cta: 'Elegir Pro', href: '/login?plan=pro', highlight: true,
+  },
+  {
+    id: 'enterprise', label: 'Enterprise', price: '$99.99', period: '/mes', questions: 'Ilimitadas', rules: 'Ilimitadas', accounts: '10',
+    extras: ['Todo Pro', 'Datos ilimitados', 'White-label', 'Webhooks personalizados'],
+    cta: 'Contactar', href: 'mailto:hola@mlautomator.com', highlight: false,
+  },
 ];
 
 const FEATURES = [
-  { icon: Zap, title: 'Respuestas automáticas', desc: 'Configura reglas basadas en palabras clave, categorías o artículos específicos y responde al instante.' },
-  { icon: MessageSquare, title: 'Plantillas dinámicas', desc: 'Crea plantillas con variables como {{buyer_name}} e {{item_title}} para respuestas personalizadas.' },
-  { icon: BarChart2, title: 'Analíticas en tiempo real', desc: 'Visualiza tu tasa de respuesta, reglas más activas y evolución de automatizaciones.' },
-  { icon: Store, title: 'Multi-cuenta', desc: 'Gestiona múltiples tiendas de Mercado Libre desde un único panel.' },
-  { icon: Shield, title: 'Seguro y confiable', desc: 'Tokens cifrados con AES-256-GCM. Reintentos automáticos con backoff exponencial.' },
-  { icon: MessageSquare, title: 'Webhooks en tiempo real', desc: 'Recibe y procesa eventos de Mercado Libre al instante para respuestas inmediatas.' },
+  { icon: Zap, title: 'Respuestas automáticas', desc: 'Configura reglas basadas en palabras clave, categorías o artículos específicos y responde preguntas al instante, 24/7.' },
+  { icon: MessageCircle, title: 'Mensajes post-venta', desc: 'Gestiona los mensajes de compradores después de la compra desde un único panel centralizado.' },
+  { icon: ShoppingBag, title: 'Inteligencia de órdenes', desc: 'Dashboard de ingresos, ventas confirmadas y valor promedio de orden con hasta 90 días de historial.' },
+  { icon: TrendingUp, title: 'Reputación del vendedor', desc: 'Seguimiento histórico de tu nivel MercadoLíder, tasa de cancelaciones y demoras para detectar tendencias.' },
+  { icon: BarChart2, title: 'Salud de publicaciones', desc: 'Alertas automáticas cuando una publicación se queda sin stock, es pausada o recibe menos visitas.' },
+  { icon: Sparkles, title: 'Sugerencias con IA', desc: 'Claude sugiere respuestas personalizadas basadas en la descripción del artículo y la pregunta del comprador.' },
+  { icon: Store, title: 'Multi-cuenta', desc: 'Gestiona múltiples tiendas de Mercado Libre — Argentina, Brasil, México, Colombia y más — desde un panel.' },
+  { icon: Shield, title: 'Seguro y confiable', desc: 'Tokens cifrados con AES-256-GCM. Reintentos automáticos con backoff exponencial. 99.9% uptime.' },
+  { icon: MessageSquare, title: 'Plantillas dinámicas', desc: 'Variables como {{buyer_name}} e {{item_title}} para respuestas naturales y personalizadas a escala.' },
 ];
 
 export default function LandingPage() {
@@ -103,9 +121,12 @@ export default function LandingPage() {
                 <p className="font-bold text-gray-900 mb-1">{plan.label}</p>
                 <p className="text-4xl font-black text-gray-900">{plan.price}<span className="text-sm font-normal text-gray-400">{plan.period}</span></p>
                 <div className="my-5 space-y-1.5 text-sm text-gray-600 flex-1">
-                  <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" />{plan.questions} preguntas/mes</div>
-                  <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" />{plan.rules} reglas</div>
-                  <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" />{plan.accounts} cuenta{plan.accounts !== '1' ? 's' : ''} ML</div>
+                  <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" />{plan.questions} preguntas/mes</div>
+                  <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" />{plan.rules} reglas</div>
+                  <div className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" />{plan.accounts} cuenta{plan.accounts !== '1' ? 's' : ''} ML</div>
+                  {plan.extras.map((extra) => (
+                    <div key={extra} className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" />{extra}</div>
+                  ))}
                 </div>
                 <Link
                   href={plan.href}
