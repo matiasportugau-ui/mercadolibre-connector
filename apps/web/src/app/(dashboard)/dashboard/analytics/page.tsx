@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { BarChart2, Lock, TrendingUp, ShoppingBag } from 'lucide-react';
 import { ReplyTrendChart } from '@/components/dashboard/ReplyTrendChart';
+import { getProfile } from '@/lib/getProfile';
 
 const LEVEL_COLOR: Record<string, string> = {
   '5_green': 'bg-green-100 text-green-700',
@@ -46,14 +47,13 @@ export default async function AnalyticsPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: accounts }, { data: profile }] = await Promise.all([
+  const [{ data: accounts }, profile] = await Promise.all([
     supabase.from('ml_accounts').select('id').eq('user_id', user!.id),
-    supabase.from('profiles').select('plan_id').eq('id', user!.id).single(),
+    getProfile(),
   ]);
 
   const accountIds = accounts?.map((a) => a.id) ?? [];
-  const planId = (profile as any)?.plan_id ?? 'free';
-  const hasAdvancedAnalytics = planId !== 'free';
+  const hasAdvancedAnalytics = (profile?.effective_plan_id ?? 'free') !== 'free';
 
   const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();

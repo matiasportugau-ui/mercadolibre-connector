@@ -26,16 +26,20 @@ export const authMiddleware = async (c, next) => {
     auth: { persistSession: false },
   });
 
-  // Reuse the same admin client to fetch plan_id (no extra client instantiation)
+  // Reuse the same admin client to fetch plan_id and admin flag (no extra client instantiation)
   const { data: profileRow } = await adminSupabase
     .from('profiles')
-    .select('plan_id')
+    .select('plan_id, is_admin')
     .eq('id', user.id)
     .single();
 
+  // Admins get full enterprise plan — all limits bypassed
+  const effectivePlanId = profileRow?.is_admin ? 'enterprise' : (profileRow?.plan_id ?? 'free');
+
   c.set('user', user);
   c.set('userId', user.id);
-  c.set('planId', profileRow?.plan_id ?? 'free');
+  c.set('planId', effectivePlanId);
+  c.set('isAdmin', profileRow?.is_admin ?? false);
   c.set('userSupabase', userSupabase);
   await next();
 };
@@ -51,8 +55,9 @@ export const planMiddleware = async (c, next) => {
     .eq('id', user.id)
     .single();
 
-  c.set('profile', profile);
-  // Keep planId in sync in case authMiddleware fetched a stale value
-  if (profile?.plan_id) c.set('planId', profile.plan_id);
+  // Admins always get enterprise — override whatever is in DB
+  const effectivePlanId = profile?.is_admin ? 'enterprise' : (profile?.plan_id ?? 'free');
+  c.set('profile', { ...profile, plan_id: effectivePlanId });
+  c.set('planId', effectivePlanId);
   await next();
 };

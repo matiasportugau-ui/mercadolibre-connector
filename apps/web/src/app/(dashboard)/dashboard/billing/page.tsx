@@ -17,6 +17,7 @@ const PLANS = [
 
 export default function BillingPage() {
   const [currentPlan, setCurrentPlan] = useState('free');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [provider, setProvider] = useState<'mp' | 'stripe'>('mp');
@@ -25,8 +26,9 @@ export default function BillingPage() {
     createClient().auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return;
       const supabase = createClient();
-      const { data } = await supabase.from('profiles').select('plan_id').eq('id', session.user.id).single();
-      setCurrentPlan(data?.plan_id ?? 'free');
+      const { data } = await supabase.from('profiles').select('plan_id, is_admin').eq('id', session.user.id).single();
+      setIsAdmin(data?.is_admin ?? false);
+      setCurrentPlan(data?.is_admin ? 'enterprise' : (data?.plan_id ?? 'free'));
       setLoading(false);
     });
   }, []);
@@ -48,6 +50,32 @@ export default function BillingPage() {
     if (data.checkoutUrl) window.location.href = data.checkoutUrl;
     setSubscribing(null);
   };
+
+  if (!loading && isAdmin) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Plan & Facturación</h1>
+        </div>
+        <div className="bg-gradient-to-br from-ml-blue to-blue-700 rounded-2xl p-8 text-white max-w-md">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-6 h-6 text-ml-yellow" />
+            <span className="font-black text-xl">Admin — Plan Completo</span>
+          </div>
+          <p className="text-blue-100 text-sm mb-4">
+            Tu cuenta tiene acceso completo a todas las funciones, límites ilimitados y todas las integraciones sin costo.
+          </p>
+          <ul className="space-y-2 text-sm text-blue-100">
+            {['Preguntas ilimitadas', 'Reglas ilimitadas', 'Cuentas ML ilimitadas', 'Mensajes post-venta', 'Inteligencia de órdenes', 'Reputación histórica', 'Sugerencias con IA', 'White-label y webhooks'].map((f) => (
+              <li key={f} className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-ml-yellow shrink-0" />{f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

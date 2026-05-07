@@ -25,12 +25,14 @@ const PLAN_BADGE: Record<string, string> = {
   starter: 'bg-blue-100 text-blue-700',
   pro: 'bg-purple-100 text-purple-700',
   enterprise: 'bg-yellow-100 text-yellow-800',
+  admin: 'bg-ml-yellow text-gray-900',
 };
 
 export function SidebarNav({ user, profile }: { user: any; profile: any }) {
   const pathname = usePathname();
   const router = useRouter();
-  const planId = profile?.plan_id ?? 'free';
+  const isAdmin = profile?.is_admin ?? false;
+  const planId = isAdmin ? 'admin' : (profile?.plan_id ?? 'free');
 
   const handleSignOut = async () => {
     const supabase = createClient();
