@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { BarChart2, Lock, TrendingUp, ShoppingBag } from 'lucide-react';
+import { ReplyTrendChart } from '@/components/dashboard/ReplyTrendChart';
 
 const LEVEL_COLOR: Record<string, string> = {
   '5_green': 'bg-green-100 text-green-700',
@@ -55,14 +56,33 @@ export default async function AnalyticsPage() {
   const hasAdvancedAnalytics = planId !== 'free';
 
   const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   // Base queries always run
-  const [{ data: byStatus }, { data: topRules }] = await Promise.all([
+  const [{ data: byStatus }, { data: last7dLogs }, { data: topRules }] = await Promise.all([
     accountIds.length > 0
       ? supabase.from('auto_reply_log').select('status').in('ml_account_id', accountIds).gte('created_at', since30d)
       : Promise.resolve({ data: [] }),
+    accountIds.length > 0
+      ? supabase.from('auto_reply_log').select('status, created_at').in('ml_account_id', accountIds).gte('created_at', since7d)
+      : Promise.resolve({ data: [] }),
     supabase.from('automation_rules').select('name, total_matched').eq('user_id', user!.id).order('total_matched', { ascending: false }).limit(5),
   ]);
+
+  // Build 7-day daily breakdown
+  const dayMap: Record<string, { Enviadas: number; Errores: number }> = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const key = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+    dayMap[key] = { Enviadas: 0, Errores: 0 };
+  }
+  for (const row of last7dLogs ?? []) {
+    const key = new Date((row as any).created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+    if (!dayMap[key]) continue;
+    if ((row as any).status === 'sent') dayMap[key].Enviadas++;
+    else if ((row as any).status === 'failed') dayMap[key].Errores++;
+  }
+  const trendData = Object.entries(dayMap).map(([date, counts]) => ({ date, ...counts }));
 
   // Advanced queries only for paid plans (avoid wasting DB calls on free tier)
   let reputationRows: any[] = [];
@@ -134,6 +154,12 @@ export default async function AnalyticsPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* 7-day trend chart */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="font-semibold text-gray-900 mb-4 text-sm">Tendencia — últimos 7 días</h2>
+            <ReplyTrendChart data={trendData} />
           </div>
 
           {/* Reputation + Revenue row */}

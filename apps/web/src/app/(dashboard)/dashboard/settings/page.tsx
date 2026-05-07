@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { CopyButton } from '@/components/dashboard/CopyButton';
+import { ProfileForm } from '@/components/dashboard/ProfileForm';
 
 export default async function SettingsPage() {
   const supabase = createClient();
@@ -20,22 +21,18 @@ export default async function SettingsPage() {
         {/* Profile */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="font-semibold text-gray-900 mb-4">Perfil</h2>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-              <input type="email" defaultValue={user?.email ?? ''} disabled className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
-              <input type="text" defaultValue={profile?.full_name ?? ''} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ml-blue" />
-            </div>
-          </div>
+          <ProfileForm
+            email={user?.email ?? ''}
+            initialName={(profile as any)?.full_name ?? ''}
+          />
         </div>
 
         {/* Webhook URL */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="font-semibold text-gray-900 mb-1">URL de Webhook</h2>
-          <p className="text-xs text-gray-400 mb-4">Configura esta URL en tu aplicación de Mercado Libre para recibir notificaciones</p>
+          <p className="text-xs text-gray-400 mb-4">
+            Configura esta URL en tu aplicación de Mercado Libre para recibir notificaciones
+          </p>
           <div className="flex gap-2">
             <input
               readOnly
