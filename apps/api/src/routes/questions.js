@@ -131,11 +131,12 @@ questionsRouter.get('/:id/suggest', async (c) => {
 });
 
 // POST /api/questions/:id/answer
-// Send a reply to a question via the ML API
+// Send a reply to a question via the ML API.
+// Optionally accepts question_text, item_id, item_title, buyer_id for richer lead tracking.
 questionsRouter.post('/:id/answer', async (c) => {
   const userId = c.get('userId');
   const questionId = c.req.param('id');
-  const { account_id, text } = await c.req.json();
+  const { account_id, text, question_text, item_id, item_title, buyer_id } = await c.req.json();
 
   if (!account_id || !text?.trim()) {
     return c.json({ error: 'account_id and text are required' }, 400);
@@ -160,14 +161,30 @@ questionsRouter.post('/:id/answer', async (c) => {
   }
 
   const result = await res.json();
+  const followUpAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-  // Log to auto_reply_log with status 'sent' (manual reply)
-  await supabase.from('auto_reply_log').insert({
-    ml_account_id: acc.id,
-    question_id: Number(questionId),
-    answer_text: text.trim(),
-    status: 'sent',
-  });
+  // Parallel: log to auto_reply_log + upsert rich context into sent_leads
+  await Promise.all([
+    supabase.from('auto_reply_log').insert({
+      ml_account_id: acc.id,
+      question_id: Number(questionId),
+      answer_text: text.trim(),
+      status: 'sent',
+    }),
+    supabase.from('sent_leads').insert({
+      user_id: userId,
+      ml_account_id: acc.id,
+      question_id: Number(questionId),
+      question_text: question_text ?? null,
+      item_id: item_id ?? null,
+      item_title: item_title ?? null,
+      buyer_id: buyer_id ?? null,
+      quote_text: text.trim(),
+      source: 'manual',
+      follow_up_at: followUpAt,
+      follow_up_status: 'pending',
+    }),
+  ]);
 
-  return c.json({ ok: true, answer: result });
+  return c.json({ ok: true, answer: result, follow_up_at: followUpAt });
 });

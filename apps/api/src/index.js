@@ -12,6 +12,7 @@ import { analyticsRouter } from './routes/analytics.js';
 import { messagesRouter } from './routes/messages.js';
 import { itemsRouter } from './routes/items.js';
 import { questionsRouter } from './routes/questions.js';
+import { reportsRouter } from './routes/reports.js';
 import { runReputationSnapshot } from './jobs/snapshotReputation.js';
 import { runItemsSnapshot } from './jobs/snapshotItems.js';
 
@@ -37,6 +38,7 @@ app.route('/api/questions', questionsRouter);
 app.route('/api/analytics', analyticsRouter);
 app.route('/api/messages', messagesRouter);
 app.route('/api/items', itemsRouter);
+app.route('/api/reports', reportsRouter);
 app.route('/webhooks', webhooksRouter);
 
 // Cron job endpoints — protected by CRON_SECRET
