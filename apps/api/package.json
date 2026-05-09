@@ -1,0 +1,26 @@
+{
+  "name": "@ml-automator/api",
+  "version": "1.0.0",
+  "description": "ML Automator backend API",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "@ml-automator/automation-engine": "workspace:*",
+    "@supabase/supabase-js": "^2.43.0",
+    "hono": "^4.4.0",
+    "mercadopago": "^2.0.6",
+    "stripe": "^16.2.0",
+    "@anthropic-ai/sdk": "^0.24.0",
+    "dotenv": "^17.3.1",
+    "pino": "^10.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

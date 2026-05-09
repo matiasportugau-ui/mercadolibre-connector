@@ -1,0 +1,29 @@
+{
+  "name": "@bmc/mercadolibre-sdk",
+  "version": "1.0.0",
+  "description": "MercadoLibre automation SDK for calculadora-bmc and LATAM integrations",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "keywords": ["mercadolibre", "automation", "latam", "ecommerce", "auto-reply"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matiasportugau-ui/mercadolibre-connector"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": ">=2"
+  },
+  "dependencies": {
+    "@ml-automator/automation-engine": "workspace:*"
+  }
+}

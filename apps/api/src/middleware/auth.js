@@ -1,0 +1,63 @@
+import { createClient } from '@supabase/supabase-js';
+import { config } from '../config.js';
+
+/** Validates the Supabase JWT from Authorization header and attaches user to context. */
+export const authMiddleware = async (c, next) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ ok: false, error: 'Missing authorization header' }, 401);
+  }
+  const token = authHeader.slice(7);
+
+  // Verify the token using the service-role client (auth.getUser is safe here)
+  const adminSupabase = createClient(config.supabaseUrl, config.supabaseServiceKey, {
+    auth: { persistSession: false },
+  });
+  const [{ data: { user }, error }, ] = await Promise.all([
+    adminSupabase.auth.getUser(token),
+  ]);
+  if (error || !user) {
+    return c.json({ ok: false, error: 'Invalid or expired token' }, 401);
+  }
+
+  // Per-request client uses the anon key + user JWT so RLS is enforced
+  const userSupabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false },
+  });
+
+  // Reuse the same admin client to fetch plan_id and admin flag (no extra client instantiation)
+  const { data: profileRow } = await adminSupabase
+    .from('profiles')
+    .select('plan_id, is_admin')
+    .eq('id', user.id)
+    .single();
+
+  // Admins get full enterprise plan — all limits bypassed
+  const effectivePlanId = profileRow?.is_admin ? 'enterprise' : (profileRow?.plan_id ?? 'free');
+
+  c.set('user', user);
+  c.set('userId', user.id);
+  c.set('planId', effectivePlanId);
+  c.set('isAdmin', profileRow?.is_admin ?? false);
+  c.set('userSupabase', userSupabase);
+  await next();
+};
+
+/** Fetches full profile for plan-limit checks. Sets 'profile' and syncs 'planId'. */
+export const planMiddleware = async (c, next) => {
+  const user = c.get('user');
+  const userSupabase = c.get('userSupabase');
+
+  const { data: profile } = await userSupabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  // Admins always get enterprise — override whatever is in DB
+  const effectivePlanId = profile?.is_admin ? 'enterprise' : (profile?.plan_id ?? 'free');
+  c.set('profile', { ...profile, plan_id: effectivePlanId });
+  c.set('planId', effectivePlanId);
+  await next();
+};
