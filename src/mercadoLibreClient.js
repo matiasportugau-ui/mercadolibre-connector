@@ -187,3 +187,19 @@ export const createMercadoLibreClient = ({ config, tokenStore, logger }) => {
     requestWithRetries,
   };
 };
+
+let globalClient = null;
+
+export const initializeClient = (client) => {
+  globalClient = client;
+};
+
+export const requestWithRetries = (opts) => {
+  if (!globalClient) throw new Error("Client not initialized");
+  return globalClient.requestWithRetries(opts);
+};
+
+export const getStoredTokens = async () => {
+  if (!globalClient) throw new Error("Client not initialized");
+  return globalClient.getStoredTokens();
+};

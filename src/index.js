@@ -4,7 +4,15 @@ import pino from "pino";
 import pinoHttp from "pino-http";
 import { config } from "./config.js";
 import { createTokenStore } from "./tokenStore.js";
-import { createMercadoLibreClient } from "./mercadoLibreClient.js";
+import { createMercadoLibreClient, initializeClient } from "./mercadoLibreClient.js";
+import apiAuth from "./middleware/apiAuth.js";
+import * as webhookStore from "./webhookStore.js";
+import listingsRouter from "./routes/listings.js";
+import messagesRouter from "./routes/messages.js";
+import shipmentsRouter from "./routes/shipments.js";
+import advertisingRouter from "./routes/advertising.js";
+import analyticsRouter from "./routes/analytics.js";
+import aiRouter from "./routes/ai.js";
 
 const logger = pino({
   level: process.env.LOG_LEVEL || "info",
@@ -35,8 +43,6 @@ const oauthStatePruneInterval = setInterval(pruneExpiredOauthStates, stateTtlMs)
 if (typeof oauthStatePruneInterval.unref === "function") {
   oauthStatePruneInterval.unref();
 }
-const webhookEvents = [];
-const maxWebhookEvents = 250;
 
 const tokenStore = createTokenStore({
   filePath: config.tokenFile,
@@ -44,6 +50,7 @@ const tokenStore = createTokenStore({
   logger,
 });
 const ml = createMercadoLibreClient({ config, tokenStore, logger });
+initializeClient(ml);
 
 const missingConfig = () => {
   const missing = [];
@@ -222,8 +229,6 @@ app.post("/webhooks/ml", asyncHandler(async (req, res) => {
   }
 
   const event = {
-    id: crypto.randomUUID(),
-    receivedAt: new Date().toISOString(),
     body: req.body,
     query: req.query,
     headers: {
@@ -232,18 +237,26 @@ app.post("/webhooks/ml", asyncHandler(async (req, res) => {
       "x-signature": req.headers["x-signature"],
     },
   };
-  webhookEvents.unshift(event);
-  if (webhookEvents.length > maxWebhookEvents) webhookEvents.pop();
-
-  req.log.info({ eventId: event.id, topic: event.headers.topic }, "MercadoLibre webhook received");
-  res.status(200).json({ ok: true, eventId: event.id });
+  
+  webhookStore.append(event);
+  req.log.info({ topic: event.headers.topic }, "MercadoLibre webhook received");
+  res.status(200).json({ ok: true, message: "Webhook received" });
 }));
 
 if (config.appEnv === "development") {
   app.get("/webhooks/ml/events", asyncHandler(async (req, res) => {
-    res.json({ ok: true, count: webhookEvents.length, events: webhookEvents });
+    const n = Number(req.query.limit || 50);
+    const events = webhookStore.tail(n);
+    res.json({ ok: true, count: events.length, events });
   }));
 }
+
+app.use("/ml/listings", apiAuth, listingsRouter);
+app.use("/ml/messages", apiAuth, messagesRouter);
+app.use("/ml/shipments", apiAuth, shipmentsRouter);
+app.use("/ml/ads", apiAuth, advertisingRouter);
+app.use("/ml/analytics", apiAuth, analyticsRouter);
+app.use("/ai", apiAuth, aiRouter);
 
 app.use((error, req, res, _next) => {
   const status = Number(error.status || 500);

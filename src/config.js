@@ -23,6 +23,9 @@ export const config = {
   tokenFile: process.env.ML_TOKEN_FILE || path.resolve(".ml-tokens.enc"),
   tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY || "",
   webhookVerifyToken: process.env.WEBHOOK_VERIFY_TOKEN || "",
+  connectorApiKey: process.env.CONNECTOR_API_KEY || "",
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+  webhookLogPath: process.env.ML_WEBHOOK_LOG_PATH || ".ml-webhooks.ndjson",
   maxRetries: Number(process.env.ML_HTTP_MAX_RETRIES || 3),
   requestTimeoutMs: Number(process.env.ML_HTTP_TIMEOUT_MS || 15000),
 };
@@ -36,3 +39,5 @@ export const redirectUri = () => {
   }
   return config.mlRedirectUriDev;
 };
+
+export default config;
